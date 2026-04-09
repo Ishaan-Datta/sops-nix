@@ -98,6 +98,7 @@ let
         gnupgHome = cfg.gnupg.home;
         sshKeyPaths = cfg.gnupg.sshKeyPaths;
         ageKeyFile = cfg.age.keyFile;
+        ageSshKeyFile = cfg.age.sshKeyFile;
         ageSshKeyPaths = cfg.age.sshKeyPaths;
         placeholderBySecretName = cfg.placeholder;
         userMode = true;
@@ -267,6 +268,18 @@ in
         '';
       };
 
+      sshKeyFile = lib.mkOption {
+        type = lib.types.nullOr pathNotInStore;
+        default = null;
+        example = "/home/someuser/.ssh/id_ed25519";
+        description = ''
+          Path to ssh key file that will be used by age for sops decryption.
+
+          Unlike {option}`config.sops.age.sshKeyPaths`, this option makes use of
+          the native ssh key support in age and requires no conversion.
+        '';
+      };
+
       sshKeyPaths = lib.mkOption {
         type = lib.types.listOf lib.types.path;
         default = [ ];
@@ -327,6 +340,7 @@ in
           || cfg.gnupg.sshKeyPaths != [ ]
           || cfg.gnupg.qubes-split-gpg.enable == true
           || cfg.age.keyFile != null
+          || cfg.age.sshKeyFile != null
           || cfg.age.sshKeyPaths != [ ];
         message = "No key source configured for sops. Either set services.openssh.enable or set sops.age.keyFile or sops.gnupg.home or sops.gnupg.qubes-split-gpg.enable";
       }
@@ -370,7 +384,12 @@ in
           pluginPaths = lib.makeBinPath cfg.age.plugins;
           systemPaths = lib.optionalString pkgs.stdenv.isDarwin "/usr/bin:/bin:/usr/sbin:/sbin";
         in
-        lib.concatStringsSep ":" (lib.filter (p: p != "") [ pluginPaths systemPaths ]);
+        lib.concatStringsSep ":" (
+          lib.filter (p: p != "") [
+            pluginPaths
+            systemPaths
+          ]
+        );
 
       QUBES_GPG_DOMAIN = lib.mkIf cfg.gnupg.qubes-split-gpg.enable (
         lib.mkDefault cfg.gnupg.qubes-split-gpg.domain
