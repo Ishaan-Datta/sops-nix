@@ -1,0 +1,41 @@
+name: Sync Upstream
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update Branch
+        run: |
+          git remote add sops-nix https://github.com/Mic92/sops-nix.git
+          git fetch sops-nix
+          git fetch origin patch
+          git reset --hard sops-nix/master
+
+      - name: Apply Patches
+        run: |
+          if ! git cherry-pick origin/patch; then
+            exit 1
+          fi
+
+          git rm -r .github
+          git commit -m "Remove .github from fork"
+          git push origin HEAD:master --force-with-lease
