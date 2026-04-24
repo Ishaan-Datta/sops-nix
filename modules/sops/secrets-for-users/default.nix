@@ -51,6 +51,7 @@ in
           cfg.gnupg.sshKeyPaths
           (lib.lists.optional (cfg.age.keyFile != null) cfg.age.keyFile)
           cfg.age.sshKeyPaths
+          (lib.lists.optional (cfg.age.sshKeyFile != null) cfg.age.sshKeyFile)
         ];
       };
 
